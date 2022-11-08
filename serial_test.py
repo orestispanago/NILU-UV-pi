@@ -4,6 +4,7 @@ import itertools
 import os
 import re
 import time
+import glob
 
 import serial
 
@@ -29,6 +30,8 @@ col_names = [
     "PAR",
     "temp_int_C",
 ]
+
+DATA_DIR = "data"
 
 
 def send_cmd(cmd):
@@ -64,6 +67,12 @@ def readline_until(word):
             break
 
 
+def auth():
+    readline_until("PASSWORD")
+    send_cmd("")
+    ser.read_until(expected="\n").decode()
+
+
 def get_data_lines():
     data_lines = []
     while True:
@@ -86,6 +95,7 @@ def convert(data):
 
 
 def get_date_range():
+    send_cmd("L1M")
     date_range_lines = ser.read_until(expected="\n").decode()
     ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
     stripped = ansi_escape.sub("", date_range_lines)
@@ -97,10 +107,7 @@ def get_date_range():
     return from_date, to_date
 
 
-def readout(
-    start=datetime.datetime(2022, 11, 8),
-    end=datetime.datetime(2022, 11, 8, 0, 1),
-):
+def get_data_from_to(start, end):
     print(f"Reading data from {start} to {end}")
     start_date = start.strftime("%Y%m%d")
     start_time = start.strftime("%H%M")
@@ -138,21 +145,41 @@ def save_as_daily_files(records):
     dates = group_by_date(records)
     for d in dates:
         fname = f'{d[0].get("Datetime").strftime("%Y%m%d")}.csv'
-        fpath = os.path.join("data", fname)
+        fpath = os.path.join(DATA_DIR, fname)
         if not os.path.exists(fpath):
             dicts_to_csv(d, fpath, header=True)
         else:
             dicts_to_csv(d, fpath)
 
 
-with ser:
-    readline_until("PASSWORD")
-    send_cmd("")
-    ser.read_until(expected="\n").decode()
-    send_cmd("L1M")
-    from_date, to_date = get_date_range()
-    data = readout()
+def get_last_readout():
+    local_files = sorted(glob.glob(f"{DATA_DIR}/*.csv"))
+    if len(local_files) > 0:
+        with open(local_files[-1], "r") as f:
+            last_line = f.readlines()[-1]
+            last_readout_str = last_line.split(",")[0]
+            last_readout = datetime.datetime.strptime(
+                last_readout_str, "%Y-%m-%d %H:%M:%S"
+            )
+            return last_readout
+    return None
 
-records = convert(data)
+
+def get_data_since_last_readout():
+    with ser:
+        auth()
+        from_date, to_date = get_date_range()
+        last_readout = get_last_readout()
+        if last_readout:
+            data = get_data_from_to(
+                last_readout + datetime.timedelta(minutes=1), to_date
+            )
+        else:
+            data = get_data_from_to(from_date, to_date)
+        records = convert(data)
+    return records
+
+
+records = get_data_since_last_readout()
 save_as_daily_files(records)
-print(records)
+# print(records)
