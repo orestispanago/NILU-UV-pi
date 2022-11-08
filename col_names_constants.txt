@@ -1,0 +1,9 @@
+Date (YYMMDD)
+time (HHMMSS)
+UV irradiance at 301nm (W/m^2)= initial value*7.2*10^-7
+UV irradiance at 312nm (W/m^2)=initial value*1.28*10^-7
+UV irradiance at 320nm (W/m^2)=initial value*6.74*10^-7
+UV irradiance at 340nm (W/m^2)=initial value*6.89*10^-7
+UV irradiance at 380nm (W/m^2)=initial value*6.2*10^-6
+Photosynthetically Active Radiation (PAR) (μmol/(m^2*s))=initial value*0.003
+internal NILU-UV temperature in °C
