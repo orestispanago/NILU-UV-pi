@@ -82,13 +82,13 @@ def set_time():
     send_cmd("TIME")
     readline_until("Y")
     send_cmd("N")
-    utcnow = datetime.datetime.utcnow()
-    date_utc = utcnow.strftime("%Y%m%d")
-    time_utc = utcnow.strftime("%H%M%S")
+    utc_now = datetime.datetime.utcnow()
+    date_utc = utc_now.strftime("%Y%m%d")
+    time_utc = utc_now.strftime("%H%M%S")
     send_cmd(date_utc)
     send_cmd(time_utc)
     send_cmd("Y")
-    logger.debug("Set time")
+    logger.debug(f"Set time to {utc_now} UTC")
 
 
 def get_data_lines():
@@ -109,7 +109,7 @@ def convert(data):
         col_values.insert(0, date_time)
         record = {key: value for key, value in zip(col_names, col_values)}
         records.append(record)
-    logger.info(f"Converted {len(records)} records")
+    logger.debug(f"Converted {len(records)} records")
     return records
 
 
@@ -139,6 +139,7 @@ def get_data_from_to(start, end):
     send_cmd("N")
     readline_until("SITE")
     data = get_data_lines()
+    logger.info(f"Retrieved {len(data)} records")
     return data
 
 
@@ -176,15 +177,15 @@ def get_last_readout():
     if len(local_files) > 0:
         with open(local_files[-1], "r") as f:
             last_line = f.readlines()[-1]
-            last_readout_str = last_line.split(",")[0]
-            last_readout = datetime.datetime.strptime(
-                last_readout_str, "%Y-%m-%d %H:%M:%S"
-            )
-            return last_readout
+        last_readout_str = last_line.split(",")[0]
+        last_readout = datetime.datetime.strptime(last_readout_str, "%Y-%m-%d %H:%M:%S")
+        logger.debug(f"Last readout: {last_readout}")
+        return last_readout
+    logger.warning("No csv file found!")
     return None
 
 
-def get_data_since_last_readout():
+def get_records_since_last_readout():
     with ser:
         auth()
         set_time()
@@ -195,9 +196,8 @@ def get_data_since_last_readout():
                 last_readout + datetime.timedelta(minutes=1), to_date
             )
         else:
-            logger.warning("No csv file found, reading all memory...")
             data = get_data_from_to(from_date, to_date)
-        records = convert(data)
+    records = convert(data)
     return records
 
 

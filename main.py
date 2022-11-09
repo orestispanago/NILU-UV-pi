@@ -6,7 +6,7 @@ import os
 
 from uploaders import upload_to_ftp
 from datalogger import (
-    get_data_since_last_readout,
+    get_records_since_last_readout,
     save_as_daily_files,
     archive_past_days,
     DATA_DIR,
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-    records = get_data_since_last_readout()
+    records = get_records_since_last_readout()
     save_as_daily_files(records)
     local_files = sorted(glob.glob(f"{DATA_DIR}/*.csv"))
     upload_to_ftp(local_files)

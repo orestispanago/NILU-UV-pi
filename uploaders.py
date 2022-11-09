@@ -3,7 +3,6 @@ from ftplib import FTP
 import os
 
 logger = logging.getLogger(__name__)
-logging.config.fileConfig("logging.conf", disable_existing_loggers=False)
 
 FTP_IP = ""
 FTP_USER = ""
@@ -19,4 +18,5 @@ def upload_to_ftp(local_files):
         for local_file, remote_file in zip(local_files, base_names):
             with open(local_file, "rb") as f:
                 ftp.storbinary(f"STOR {remote_file}", f)
+            logger.debug(f"Uploaded file {local_file} to FTP")
     logger.info(f"Uploaded {len(local_files)} files to FTP.")
