@@ -5,8 +5,15 @@ import os
 import re
 import time
 import glob
+import logging
+import logging.config
+import traceback
+from uploaders import upload_to_ftp
 
 import serial
+
+
+logger = logging.getLogger(__name__)
 
 ser = serial.Serial(
     port=None,
@@ -37,25 +44,25 @@ DATA_DIR = "data"
 def send_cmd(cmd):
     ser.write(f"{cmd}\r".encode())
     time.sleep(0.5)
-    print(f"Sent '{cmd}' command")
+    logger.debug(f"Sent '{cmd}' command")
 
 
 def send_esc_cmd():
     ser.write(chr(27).encode())
-    print("Sent <Esc> command")
+    logger.debug("Sent <Esc> command")
 
 
 def refresh_output():
     while True:
         raw = ser.read().decode()
-        print(raw, sep="", end="", flush=True)
+        logger.debug(raw, sep="", end="", flush=True)
 
 
 def show_output():
     try:
         refresh_output()
     except KeyboardInterrupt:
-        print("\nReceived Keyboard Interrupt")
+        logger.info("\nReceived Keyboard Interrupt")
         send_esc_cmd()
 
 
@@ -63,7 +70,7 @@ def readline_until(word):
     while True:
         line = ser.readline().decode()
         if word in line:
-            print(f"Found {word}")
+            logger.debug(f"Found {word}")
             break
 
 
@@ -91,6 +98,7 @@ def convert(data):
         col_values.insert(0, date_time)
         record = {key: value for key, value in zip(col_names, col_values)}
         records.append(record)
+    logger.debug(f"Converted {len(records)} records")
     return records
 
 
@@ -103,12 +111,12 @@ def get_date_range():
     to_date_str = stripped.split(":")[4][:12]
     from_date = datetime.datetime.strptime(from_date_str, "%Y%m%d%H%M")
     to_date = datetime.datetime.strptime(to_date_str, "%Y%m%d%H%M")
-    print(f"Available data from: {from_date} to {to_date}")
+    logger.debug(f"Available data from: {from_date} to {to_date}")
     return from_date, to_date
 
 
 def get_data_from_to(start, end):
-    print(f"Reading data from {start} to {end}")
+    logger.debug(f"Reading data from {start} to {end}")
     start_date = start.strftime("%Y%m%d")
     start_time = start.strftime("%H%M")
     end_date = end.strftime("%Y%m%d")
@@ -138,7 +146,7 @@ def dicts_to_csv(dict_list, fname, header=False):
         if header:
             dict_writer.writeheader()
         dict_writer.writerows(dict_list)
-    print(f"Wrote {len(dict_list)} lines in {fname}")
+    logger.debug(f"Wrote {len(dict_list)} lines in {fname}")
 
 
 def save_as_daily_files(records):
@@ -180,6 +188,20 @@ def get_data_since_last_readout():
     return records
 
 
-records = get_data_since_last_readout()
-save_as_daily_files(records)
-# print(records)
+def mkdir_if_not_exists(dir_path):
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
+
+def move_files_to_folder(src_files, dest_folder):
+    mkdir_if_not_exists(dest_folder)
+    src_basenames = [os.path.basename(f) for f in src_files]
+    for src_file, src_basename in zip(src_files, src_basenames):
+        dest_file = f"{dest_folder}/{src_basename}"
+        os.rename(src_file, dest_file)
+        logger.info(f"Renamed file {src_file} to {dest_file}")
+
+
+def archive_past_days(local_files, dest_folder):
+    if len(local_files) > 1:
+        move_files_to_folder(local_files[:-1], dest_folder)
