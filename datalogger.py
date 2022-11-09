@@ -7,8 +7,6 @@ import time
 import glob
 import logging
 import logging.config
-import traceback
-from uploaders import upload_to_ftp
 
 import serial
 
@@ -55,7 +53,7 @@ def send_esc_cmd():
 def refresh_output():
     while True:
         raw = ser.read().decode()
-        logger.debug(raw, sep="", end="", flush=True)
+        print(raw, sep="", end="", flush=True)
 
 
 def show_output():
@@ -80,6 +78,19 @@ def auth():
     ser.read_until(expected="\n").decode()
 
 
+def set_time():
+    send_cmd("TIME")
+    readline_until("Y")
+    send_cmd("N")
+    utcnow = datetime.datetime.utcnow()
+    date_utc = utcnow.strftime("%Y%m%d")
+    time_utc = utcnow.strftime("%H%M%S")
+    send_cmd(date_utc)
+    send_cmd(time_utc)
+    send_cmd("Y")
+    logger.debug("Set time")
+
+
 def get_data_lines():
     data_lines = []
     while True:
@@ -98,7 +109,7 @@ def convert(data):
         col_values.insert(0, date_time)
         record = {key: value for key, value in zip(col_names, col_values)}
         records.append(record)
-    logger.debug(f"Converted {len(records)} records")
+    logger.info(f"Converted {len(records)} records")
     return records
 
 
@@ -176,6 +187,7 @@ def get_last_readout():
 def get_data_since_last_readout():
     with ser:
         auth()
+        set_time()
         from_date, to_date = get_date_range()
         last_readout = get_last_readout()
         if last_readout:
@@ -183,6 +195,7 @@ def get_data_since_last_readout():
                 last_readout + datetime.timedelta(minutes=1), to_date
             )
         else:
+            logger.warning("No csv file found, reading all memory...")
             data = get_data_from_to(from_date, to_date)
         records = convert(data)
     return records

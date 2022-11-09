@@ -4,10 +4,10 @@ import logging.config
 import traceback
 import os
 
+from uploaders import upload_to_ftp
 from datalogger import (
     get_data_since_last_readout,
     save_as_daily_files,
-    upload_to_ftp,
     archive_past_days,
     DATA_DIR,
 )
