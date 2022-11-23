@@ -199,22 +199,3 @@ def get_records_since_last_readout():
             data = get_data_from_to(from_date, to_date)
     records = convert(data)
     return records
-
-
-def mkdir_if_not_exists(dir_path):
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path)
-
-
-def move_files_to_folder(src_files, dest_folder):
-    mkdir_if_not_exists(dest_folder)
-    src_basenames = [os.path.basename(f) for f in src_files]
-    for src_file, src_basename in zip(src_files, src_basenames):
-        dest_file = f"{dest_folder}/{src_basename}"
-        os.rename(src_file, dest_file)
-        logger.info(f"Renamed file {src_file} to {dest_file}")
-
-
-def archive_past_days(local_files, dest_folder):
-    if len(local_files) > 1:
-        move_files_to_folder(local_files[:-1], dest_folder)
