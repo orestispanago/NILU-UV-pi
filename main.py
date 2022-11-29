@@ -1,15 +1,16 @@
 import glob
 import logging
 import logging.config
-import traceback
 import os
+import traceback
 
-from uploaders import upload_to_ftp, archive_past_days
 from datalogger import (
+    DATA_DIR,
     get_records_since_last_readout,
     save_as_daily_files,
-    DATA_DIR,
 )
+from uploader import upload_files_list, upload_ip_file
+from utils import archive_past_days
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -18,10 +19,11 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    upload_ip_file()
     records = get_records_since_last_readout()
     save_as_daily_files(records)
     local_files = sorted(glob.glob(f"{DATA_DIR}/*.csv"))
-    upload_to_ftp(local_files)
+    upload_files_list(local_files)
     archive_past_days(local_files)
     logger.debug(f"{'-' * 15} SUCCESS {'-' * 15}")
 
