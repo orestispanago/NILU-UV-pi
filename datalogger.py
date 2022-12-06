@@ -1,15 +1,14 @@
 import csv
 import datetime
+import glob
 import itertools
+import logging
+import logging.config
 import os
 import re
 import time
-import glob
-import logging
-import logging.config
 
 import serial
-
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,7 @@ ser = serial.Serial(
 ser.port = "/dev/ttyUSB0"
 
 col_names = [
-    "Datetime",
+    "Datetime_UTC",
     "UV_301nm",
     "UV_312nm",
     "UV_320nm",
@@ -145,7 +144,7 @@ def get_data_from_to(start, end):
 
 def group_by_date(records):
     dates = []
-    date_func = lambda x: x["Datetime"].date()
+    date_func = lambda x: x["Datetime_UTC"].date()
     for key, group in itertools.groupby(records, date_func):
         dates.append([g for g in group])
     return dates
@@ -164,7 +163,7 @@ def dicts_to_csv(dict_list, fname, header=False):
 def save_as_daily_files(records):
     dates = group_by_date(records)
     for d in dates:
-        fname = f'{d[0].get("Datetime").strftime("%Y%m%d")}.csv'
+        fname = f'{d[0].get("Datetime_UTC").strftime("%Y%m%d")}.csv'
         fpath = os.path.join(DATA_DIR, fname)
         if not os.path.exists(fpath):
             dicts_to_csv(d, fpath, header=True)
@@ -178,7 +177,9 @@ def get_last_readout():
         with open(local_files[-1], "r") as f:
             last_line = f.readlines()[-1]
         last_readout_str = last_line.split(",")[0]
-        last_readout = datetime.datetime.strptime(last_readout_str, "%Y-%m-%d %H:%M:%S")
+        last_readout = datetime.datetime.strptime(
+            last_readout_str, "%Y-%m-%d %H:%M:%S"
+        )
         logger.debug(f"Last readout: {last_readout}")
         return last_readout
     logger.warning("No csv file found!")
