@@ -171,19 +171,35 @@ def save_as_daily_files(records):
             dicts_to_csv(d, fpath)
 
 
+def remove_last_line(fname):
+    with open(fname, "r") as rf:
+        lines = rf.readlines()
+    with open(fname, "w") as wf:
+        wf.writelines(lines[:-2])
+    logger.warning(f"Removed last line from {fname}")
+
+
+def get_last_readout_from_file(fname):
+    with open(fname, "r") as f:
+        last_line = f.readlines()[-1]
+    last_record = last_line.split(",")[0]
+    logger.debug(f"Last record: {last_record}")
+    return datetime.datetime.strptime(last_record, "%Y-%m-%d %H:%M:%S")
+
+
 def get_last_readout():
     local_files = sorted(glob.glob(f"{DATA_DIR}/*.csv"))
     if len(local_files) > 0:
-        with open(local_files[-1], "r") as f:
-            last_line = f.readlines()[-1]
-        last_readout_str = last_line.split(",")[0]
-        last_readout = datetime.datetime.strptime(
-            last_readout_str, "%Y-%m-%d %H:%M:%S"
-        )
-        logger.debug(f"Last readout: {last_readout}")
-        return last_readout
-    logger.warning("No csv file found!")
-    return None
+        last_file = local_files[-1]
+        try:
+            return get_last_readout_from_file(last_file)
+        except ValueError as e:
+            logger.error(f"ValueError: {e}")
+            logger.warning(f"removing last line from {last_file}")
+            remove_last_line(last_file)
+            return get_last_readout_from_file(last_file)
+    logger.warning("No .csv file found, will read all datalogger memory...")
+    return datetime.datetime(1990, 1, 1, 0, 0, 1)
 
 
 def get_records_since_last_readout():
