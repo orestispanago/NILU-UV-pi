@@ -33,7 +33,7 @@ def archive_past_days(local_files):
     if len(local_files) > 1:
         for local_file in local_files[:-1]:
             base_name = os.path.basename(local_file)
-            year = base_name[:4]
+            year = base_name.split("_")[1][:4]
             dest_folder = f"{DATA_DIR}/archive/{year}"
             dest_path = f"{dest_folder}/{base_name}"
             mkdir_if_not_exists(dest_folder)

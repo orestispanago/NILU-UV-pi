@@ -160,10 +160,10 @@ def dicts_to_csv(dict_list, fname, header=False):
     logger.debug(f"Wrote {len(dict_list)} lines in {fname}")
 
 
-def save_as_daily_files(records):
+def save_as_daily_files(records, prefix=None):
     dates = group_by_date(records)
     for d in dates:
-        fname = f'{d[0].get("Datetime_UTC").strftime("%Y%m%d")}.csv'
+        fname = f'{prefix}{d[0].get("Datetime_UTC").strftime("%Y%m%d")}.csv'
         fpath = os.path.join(DATA_DIR, fname)
         if not os.path.exists(fpath):
             dicts_to_csv(d, fpath, header=True)

@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 IP = ""
 USER = ""
 PASSWORD = ""
-DIR = "/dataloggers/test"
+DIR = "/dataloggers/nilu"
 
-IP_FILE = "dataloggers/IP-addresses/test.txt"
+IP_FILE = "dataloggers/IP-addresses/nilu.txt"
 
 
 def upload_file_from_memory(remote_fname, bytes_io_object):
@@ -44,12 +44,12 @@ def upload_file(ftp_session, local_path, remote_path):
     logger.info(f"Uploaded {local_path} to {remote_path}")
 
 
-def upload_files_list(local_files):
+def upload_files(local_files):
     with FTP(IP, USER, PASSWORD) as ftp:
         ftp.cwd(DIR)
         for local_file in local_files:
             base_name = os.path.basename(local_file)
-            year = base_name[:4]
+            year = base_name.split("_")[1][:4]
             remote_path = f"{year}/{base_name}"
             try:
                 upload_file(ftp, local_file, remote_path)
