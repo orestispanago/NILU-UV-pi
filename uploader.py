@@ -3,19 +3,17 @@ import os
 from ftplib import FTP, error_perm
 
 import utils
+from config import FTP_IP, FTP_PASS, FTP_USER
 
 logger = logging.getLogger(__name__)
 
-IP = ""
-USER = ""
-PASSWORD = ""
 DIR = "/dataloggers/nilu"
 
 IP_FILE = "dataloggers/IP-addresses/nilu.txt"
 
 
 def upload_file_from_memory(remote_fname, bytes_io_object):
-    with FTP(IP, USER, PASSWORD) as ftp:
+    with FTP(FTP_IP, FTP_USER, FTP_PASS) as ftp:
         ftp.storbinary(f"STOR {remote_fname}", bytes_io_object)
     logger.info(f"Created file {remote_fname} at FTP")
 
@@ -45,7 +43,7 @@ def upload_file(ftp_session, local_path, remote_path):
 
 
 def upload_files(local_files):
-    with FTP(IP, USER, PASSWORD) as ftp:
+    with FTP(FTP_IP, FTP_USER, FTP_PASS) as ftp:
         ftp.cwd(DIR)
         for local_file in local_files:
             base_name = os.path.basename(local_file)
