@@ -6,6 +6,7 @@ import logging
 import logging.config
 import os
 import re
+import subprocess
 import time
 
 import serial
@@ -75,6 +76,19 @@ def auth():
     readline_until("PASSWORD")
     send_cmd("")
     ser.read_until(expected="\n").decode()
+
+
+def is_clock_synced():
+    # After a power cut with no network, the Pi boots with its last saved time
+    result = subprocess.run(
+        ["timedatectl", "show", "-p", "NTPSynchronized", "--value"],
+        capture_output=True,
+        text=True,
+    )
+    synced = False
+    if result.stdout.strip() == "yes":
+        synced = True
+    return synced
 
 
 def set_time():
@@ -205,7 +219,10 @@ def get_last_readout():
 def get_records_since_last_readout():
     with ser:
         auth()
-        set_time()
+        if is_clock_synced():
+            set_time()
+        else:
+            logger.warning("System clock not synced, NILU-UV time not set")
         from_date, to_date = get_date_range()
         last_readout = get_last_readout()
         if last_readout:
